@@ -12,12 +12,12 @@ import numpy as np
 from tqdm import tqdm
 import logging
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# 在 train.py 顶部导入
 from torch.cuda.amp import autocast, GradScaler
 
 
@@ -256,7 +256,37 @@ def get_transforms(input_size, mean, std, train=True):
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std)
         ])
+def plot_curves(train_losses, train_accs, val_losses, val_accs, save_dir):
+    """绘制并保存 Loss 和 Accuracy 曲线"""
+    epochs = range(1, len(train_losses) + 1)
 
+    plt.figure(figsize=(12, 5))
+
+    # Loss 曲线
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, train_losses, 'bo-', label='Train Loss')
+    plt.plot(epochs, val_losses, 'ro-', label='Validation Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+
+    # Accuracy 曲线
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, train_accs, 'bD-', label='Train Accuracy')
+    plt.plot(epochs, val_accs, 'rD-', label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy (%)')
+    plt.legend()
+    plt.grid(True)
+
+    # 保存图像
+    plot_path = os.path.join(save_dir, 'training_curves.png')
+    plt.savefig(plot_path, bbox_inches='tight', dpi=200)
+    plt.close()  # 关闭图像释放内存
+    logger.info(f"曲线图已保存至: {plot_path}")
 
 def main():
     parser = argparse.ArgumentParser(description='疲劳驾驶检测训练')
@@ -336,15 +366,29 @@ def main():
         gamma=0.1
     )
 
+    #用于存储指标的列表
+    train_losses = []
+    train_accs = []
+    val_losses = []
+    val_accs = []
+
     # 训练循环
     best_acc = 0.0
     for epoch in range(config['num_epochs']):
         logger.info(f'Epoch {epoch + 1}/{config["num_epochs"]}')
 
+        # 训练
         train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
+        # 验证
         val_loss, val_acc = validate(model, test_loader, criterion, device)
 
         scheduler.step()
+
+        # 记录指标
+        train_losses.append(train_loss)
+        train_accs.append(train_acc)
+        val_losses.append(val_loss)
+        val_accs.append(val_acc)
 
         logger.info(f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}%')
         logger.info(f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f}%')
