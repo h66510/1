@@ -21,9 +21,9 @@ lr: 0.01                       # 初始学习率
 optim_type: "SGD"              # 选择优化器，SGD,Adam
 loss_type: "CrossEntropyLoss"  # 选择损失函数：支持CrossEntropyLoss,LabelSmooth
 momentum: 0.9                  # SGD momentum
-num_epochs: 100                # 训练循环次数
+num_epochs: 20                # 训练循环次数
 num_warn_up: 0                 # warn-up次数
-num_workers: 0                 # 加载数据工作进程数
+num_workers: 8                 # 加载数据工作进程数
 weight_decay: 0.0005           # weight_decay，默认5e-4
 scheduler: "multi-step"        # 学习率调整策略
 milestones: [ 30,60,100 ]       # 下调学习率方式
